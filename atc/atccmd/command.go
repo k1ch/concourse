@@ -118,9 +118,9 @@ type RunCommand struct {
 
 	Postgres flag.PostgresConfig `group:"PostgreSQL Configuration" namespace:"postgres"`
 
-	ConcurrentRequestLimits   []wrappa.ConcurrentRequestLimitFlag `long:"concurrent-request-limit" description:"Limit the number of concurrent requests to an API endpoint (Example: ListAllJobs=5)"`
-	APIMaxOpenConnections     int                                 `long:"api-max-conns" description:"The maximum number of open connections for the api connection pool." default:"10"`
-	BackendMaxOpenConnections int                                 `long:"backend-max-conns" description:"The maximum number of open connections for the backend connection pool." default:"50"`
+	ConcurrentRequestLimits   map[wrappa.LimitedRoute]int `long:"concurrent-request-limit" description:"Limit the number of concurrent requests to an API endpoint (Example: ListAllJobs:5)"`
+	APIMaxOpenConnections     int                         `long:"api-max-conns" description:"The maximum number of open connections for the api connection pool." default:"10"`
+	BackendMaxOpenConnections int                         `long:"backend-max-conns" description:"The maximum number of open connections for the backend connection pool." default:"50"`
 
 	CredentialManagement creds.CredentialManagementConfig `group:"Credential Management"`
 	CredentialManagers   creds.Managers
@@ -530,13 +530,6 @@ func (cmd *RunCommand) Runner(positionalArguments []string) (ifrit.Runner, error
 	}
 
 	return run(grouper.NewParallel(os.Interrupt, members), onReady, onExit), nil
-}
-
-func (cmd *RunCommand) concurrentRequestPolicy() wrappa.ConcurrentRequestPolicy {
-	return wrappa.NewConcurrentRequestPolicy(
-		cmd.ConcurrentRequestLimits,
-		[]string{atc.ListAllJobs},
-	)
 }
 
 func (cmd *RunCommand) constructMembers(
@@ -1335,10 +1328,6 @@ func run(runner ifrit.Runner, onReady func(), onExit func()) ifrit.Runner {
 
 func (cmd *RunCommand) validate() error {
 	var errs *multierror.Error
-	err := cmd.concurrentRequestPolicy().Validate()
-	if err != nil {
-		errs = multierror.Append(errs, err)
-	}
 
 	switch {
 	case cmd.TLSBindPort == 0:
@@ -1758,7 +1747,10 @@ func (cmd *RunCommand) constructAPIHandler(
 		logger,
 	)
 	apiWrapper := wrappa.MultiWrappa{
-		wrappa.NewConcurrentRequestLimitsWrappa(logger, cmd.concurrentRequestPolicy()),
+		wrappa.NewConcurrentRequestLimitsWrappa(
+			logger,
+			wrappa.NewConcurrentRequestPolicy(cmd.ConcurrentRequestLimits),
+		),
 		wrappa.NewAPIMetricsWrappa(logger),
 		wrappa.NewAPIAuthWrappa(
 			checkPipelineAccessHandlerFactory,
