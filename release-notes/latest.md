@@ -27,6 +27,10 @@
 
 * Fix log highlighting on the one-off-build page. Previously, highlighting any log lines would cause the page to reload. #5384
 
+#### <sub><sup><a name="5457" href="#5457">:link:</a></sup></sub> fix
+
+* Improve consistency of auto-scrolling to highlighted logs. #5457
+
 #### <sub><sup><a name="5392" href="#5392">:link:</a></sup></sub> fix
 
 * Fix regression which inhibited scrolling through the build history list. #5392
