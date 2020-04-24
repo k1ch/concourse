@@ -65,3 +65,6 @@
 
 * Allow the dashboard to recover from the "show turbulence" view if any API call fails once, but starts working afterward. This will prevent users from needing to refresh the page after closing their laptop or in the presence of network flakiness. #5496
 
+#### <sub><sup><a name="5452" href="#5452">:link:</a></sup></sub> fix
+
+* We fixed a bug where if you create a new build and then trigger a rerun build, both the builds will be stuck in pending state. #5452
